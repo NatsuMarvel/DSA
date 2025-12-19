@@ -1,0 +1,1 @@
+# REMOVED: Elastic Beanstalk deploy workflow. This repo is now set up to deploy the frontend and backend to Vercel. If you still need EB automation, re-add this workflow.

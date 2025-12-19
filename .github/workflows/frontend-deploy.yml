@@ -1,0 +1,49 @@
+name: Frontend Deploy (S3 + CloudFront)
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Configure AWS credentials (via OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync to S3
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: |
+          aws s3 sync frontend/dist s3://$S3_BUCKET --delete --acl public-read
+
+      - name: CloudFront invalidate
+        env:
+          CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
+        run: |
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths '/*'

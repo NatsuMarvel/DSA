@@ -1,0 +1,1 @@
+// REMOVED: Secrets Manager loader removed — project uses Vercel environment variables instead.

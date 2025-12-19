@@ -1,0 +1,54 @@
+name: Backend CI/CD (ECR -> ECS)
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (via OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}
+          docker build -t $ECR_URI:$IMAGE_TAG ./backend
+          docker push $ECR_URI:$IMAGE_TAG
+          echo "image=${ECR_URI}:${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: Deploy to ECS (register new task revision & update service)
+        env:
+          CLUSTER_NAME: ${{ secrets.ECS_CLUSTER }}
+          SERVICE_NAME: ${{ secrets.ECS_SERVICE }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          # the repo contains a task-definition template; substitute image and register
+          IMAGE=${{ env.image }}
+          TASK_DEF_TEMPLATE=deploy/ecs/task-definition.json.template
+          TASK_DEF_FILE=$(mktemp)
+          jq --arg IMAGE "$IMAGE" '.containerDefinitions[0].image = $IMAGE' $TASK_DEF_TEMPLATE > $TASK_DEF_FILE
+
+          aws ecs register-task-definition --cli-input-json file://$TASK_DEF_FILE --region $AWS_REGION
+          # Update service to use latest task definition
+          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment --region $AWS_REGION
