@@ -1,0 +1,2 @@
+# REMOVED: Manual Production Seeder workflow.
+# Use the backend script `seedProduction.js` locally or via your deployment provider if you need a production seed.
