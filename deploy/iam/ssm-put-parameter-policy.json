@@ -1,3 +1,0 @@
-{
-  "REMOVED": "SSM put-parameter IAM policy removed — repo targets Vercel deployment instead of AWS SSM automation."
-}

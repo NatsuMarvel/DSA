@@ -11,6 +11,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Enable CORS for your frontend
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'https://dsa-two-zeta.vercel.app',
+  credentials: true // allow sending cookies or auth headers
+}));
+
 // Simple request logger to help debug client/server interactions
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);

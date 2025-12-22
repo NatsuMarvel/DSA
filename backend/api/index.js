@@ -1,19 +1,7 @@
-const serverless = require('serverless-http');
-const app = require('../app');
-const { connectToDatabase } = require('../lib/db');
+const app = require("../app");
+const { connectToDatabase } = require("../lib/db");
 
-// Ensure DB is connected before handling requests
-let handler = serverless(app);
+// Ensure DB connection (cached)
+connectToDatabase();
 
-module.exports = async (req, res) => {
-  try {
-    // connect to DB if not connected (connectToDatabase is idempotent)
-    await connectToDatabase();
-  } catch (err) {
-    console.error('Failed to connect to DB in serverless handler:', err.message);
-    res.status(500).send({ error: 'DB connection failed' });
-    return;
-  }
-
-  return handler(req, res);
-};
+module.exports = app;

@@ -1,0 +1,9 @@
+{
+  "name": "dsa-sheet",
+  "private": true,
+  "packageManager": "npm@9",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "cd frontend && npm install && npm run build"
+  }
+}

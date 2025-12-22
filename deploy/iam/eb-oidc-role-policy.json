@@ -1,3 +1,0 @@
-{
-  "REMOVED": "This IAM policy was used for GitHub OIDC role for Elastic Beanstalk. Removed to keep the repo focused on Vercel deployment."
-}
